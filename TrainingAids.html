@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>訓練記錄器</title>
+	<style>
+		body {
+			background-color: #E8FFE8;
+			text-align: center;
+		}
+
+		.users {
+			background-color: lightgreen;
+			font-size: 30px;
+			margin-left: 10px;
+		}
+
+		.administrator {
+			background-color: red;
+			font-size: 30px;
+			margin-left: 10px;
+		}
+
+		fieldset {
+			width: 400px;
+			margin: 0 auto;
+			float: none;
+			font-size: 30px;
+		}
+	</style>
+
+	<script>
+
+		window.onbeforeunload = function () {
+			return "確定離開當前頁面嗎？";
+		};
+
+		var onlyOne = 1;
+		var timers = {};
+
+
+		function addUser() {
+			var password = prompt("請輸入管理員密碼");
+			if (password == "open") {
+				var num = localStorage.getItem("userCount");
+				if (!num) {
+					num = 4;
+				} else {
+					num = parseInt(num) + 1;
+				}
+				var userSelect = document.getElementById("userSelect");
+				var newOption = document.createElement("option");
+				var newUser = "PHAB-" + num;
+				newOption.value = newUser;
+				newOption.text = newUser;
+				userSelect.add(newOption);
+				localStorage.setItem("userCount", num);
+				alert("已成功添加用戶" + newUser);
+			} else if (password != "openthedoor" && password != null) {
+				alert("密碼錯誤");
+			}
+		}
+
+
+		function updateUser() {
+			if (onlyOne == 1) {
+				var num = localStorage.getItem("userCount");
+				for (let i = 4; i <= num; i++) {
+					var userSelect = document.getElementById("userSelect");
+					var newOption = document.createElement("option");
+					var newUser = "PHAB-" + i;
+					newOption.value = newUser;
+					newOption.text = newUser;
+					userSelect.add(newOption);
+				}
+				onlyOne--;
+			}
+		}
+
+
+		function startTraining() {
+			var user = document.getElementById("userSelect").value;
+			var confirmUser = confirm("您是用戶" + user + "並開始訓練?");
+			if (confirmUser == true) {
+				var record = document.getElementById("record");
+				var check = record.getElementsByTagName("p");
+				for (var i = 0; i < check.length; i++) {
+					if (check[i].textContent.includes(user)) {
+						alert("用戶" + user + "已在訓練中");
+						return;
+					}
+				}
+
+				var date = new Date();
+				var y = date.getFullYear();
+				var m = date.getMonth() + 1;
+				var d = date.getDate();
+
+				var p = document.createElement("p");
+				p.setAttribute("id", user);
+				p.textContent = user + " " + y + "-" + m + "-" + d + " ";
+				record.appendChild(p);
+
+				if (!timers[user]) {
+					timers[user] = {
+						hours: 0,
+						minutes: 0,
+						seconds: 0,
+						intervalId: setInterval(updateTimer.bind(null, user), 1000)
+					};
+
+					var span = document.createElement("span");
+					span.id = "timer-" + user;
+					document.getElementById(user).appendChild(span);
+				}
+			}
+		}
+
+
+		function updateTimer(user) {
+			var timer = timers[user];
+
+			timer.seconds++;
+
+			if (timer.seconds === 60) {
+				timer.minutes++;
+				timer.seconds = 0;
+			}
+
+			if (timer.minutes === 60) {
+				timer.hours++;
+				timer.minutes = 0;
+			}
+
+			document.getElementById("timer-" + user).innerHTML = " " + timer.hours +
+				":" + timer.minutes + ":" + timer.seconds;
+		}
+
+
+		function usePoints() {
+			var password = prompt("請輸入管理員密碼");
+			if (password == "open") {
+				var user = document.getElementById("userSelect").value;
+				var getPoints = localStorage.getItem(user);
+				var subtractPoints = prompt(user + " 總積分:" + getPoints + " 請輸入使用數量");
+				if (subtractPoints <= parseInt(getPoints) && parseInt(subtractPoints) == subtractPoints) {
+					var newPoints = parseInt(getPoints) - subtractPoints;
+					localStorage.setItem(user, newPoints);
+					alert(user + "已扣除" + subtractPoints + "積分 剩餘積分:" + newPoints);
+				} else if (subtractPoints > parseInt(getPoints) && parseInt(subtractPoints) == subtractPoints) {
+					alert("積分不足" + getPoints);
+				} else { }
+			}
+		}
+
+
+		function viewRecords() {
+			var password = prompt("請輸入管理員密碼");
+			if (password == "open") {
+				var getRecord = localStorage.getItem("getRecord");
+				//alert(getRecord);
+				document.getElementById("userRecords").innerHTML = getRecord;
+			}
+		}
+
+
+		function endTraining() {
+			var user = document.getElementById("userSelect").value;
+			var check = document.getElementById("record").getElementsByTagName("p");
+			for (var i = 0; i < check.length; i++) {
+				if (check[i].textContent.includes(user)) {
+					var confirmUser = confirm("結束用戶" + user + "的訓練?");
+					if (confirmUser == true) {
+						var date = new Date();
+						var y = date.getFullYear();
+						var m = date.getMonth() + 1;
+						var d = date.getDate();
+
+						var points = 0;
+						var timer = timers[user];
+						points = (timer.hours * 2) + points;
+						if (timer.minutes >= 30) {
+							points++;
+						}
+						var getPoints = localStorage.getItem(user);
+						if (!getPoints) {
+							getPoints = 0 + points;
+						} else {
+							getPoints = parseInt(getPoints) + points;
+						}
+						localStorage.setItem(user, getPoints);
+
+						var getTime = document.getElementById("timer-" + user).innerHTML;
+						var getText = user + " " + y + "-" + m + "-" + d + " " + getTime + " +" + points + "積分 總積分:" + getPoints;
+						alert(getText);
+
+						var getRecord = localStorage.getItem("getRecord");
+						if (!getRecord) {
+							getRecord = getText + "\n";
+						} else {
+							getRecord = getRecord + getText + "\n";
+						}
+						if (points != 0) {
+							localStorage.setItem("getRecord", getRecord);
+						}
+						//alert(getRecord);
+						clearInterval(timers[user].intervalId);
+						document.getElementById(user).innerHTML = "";
+						return;
+					}
+					//return;
+				}
+			}
+		}
+
+	</script>
+</head>
+
+<body>
+	<select id="userSelect" class="users">
+		<option value="PHAB-1">PHAB-1</option>
+		<option value="PHAB-2">PHAB-2</option>
+		<option value="PHAB-3">PHAB-3</option>
+	</select>
+	<button type="button" onclick="startTraining()" class="users">開始訓練</button>
+	<button type="button" onclick="updateUser()" class="users">載入用戶</button>
+	<br><br>
+	<fieldset>
+		<legend>訓練中的用戶</legend>
+		<iu id="record"></iu>
+	</fieldset><br>
+	<button type="button" onclick="endTraining()" class="users">結束訓練</button><br><br>
+	<button type="button" onclick="viewRecords()" class="administrator">查看記錄</button>
+	<button type="button" onclick="addUser()" class="administrator">添加用戶</button>
+	<button type="button" onclick="usePoints()" class="administrator">使用積分</button><br><br>
+	<div id="userRecords"></div>
+</body>
+
+</html>
